@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Le Jeu de la Vie de Conway Infini</title>
+    <!-- Chargement de Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      /* Configuration de la police Inter */
+      @import url("https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap");
+      body {
+        font-family: "Inter", sans-serif;
+        background-color: #111827; /* Fond très sombre (gray-900) */
+      }
+      canvas {
+        /* Empêche le défilement/zoom de la page lors d'interactions sur le canvas */
+        touch-action: none;
+        border: 2px solid #374151; /* Bordure sombre */
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.4),
+          0 4px 6px -2px rgba(0, 0, 0, 0.2);
+        cursor: pointer;  
+      }
+      canvas:active {
+        cursor: grabbing; /* Curseur qui tient l'objet */
+      }
+      
+      .pattern-link {
+        cursor: pointer;
+        padding: 10px 15px;
+        background-color: #374151; 
+        border-radius: 8px;
+        text-align: center;
+        transition: background-color 0.2s;
+        font-weight: 600;
+      }
+      .pattern-link:hover {
+        background-color: #4b5563; 
+      }
+    </style>
+  </head>
+  <body
+    class="min-h-screen p-4 md:p-8 flex flex-col-reverse lg:flex-row items-start justify-center bg-zinc-900"
+  >
+    <div class="w-full bg-zinc-800 rounded-3xl p-6 md:p-10">
+  
+      <div class="flex justify-center mb-6 h-[80vh]">
+      
+        <canvas
+          id="gameCanvas"
+          class="rounded-lg w-full h-full aspect-square"
+        ></canvas>
+      </div>
+
+  
+      <p
+        id="statusMessage"
+        class="text-center text-lg font-medium text-gray-300 mt-4"
+      >
+        Statut : Prêt. Génération: 0. Cliquez pour dessiner.
+      </p>
+    </div>
+
+    <div class="p-4 flex mx-auto">
+
+      <div class="flex flex-col space-y-4 mb-8">
+       
+        <header class="text-center mb-8">
+          <h1 class="text-2xl font-extrabold text-white mb-2">
+            Le Jeu de la Vie de Conway
+          </h1>
+          <p class="text-zinc-400 italic">
+            Déplacez-vous (glisser) et zoomez (molette) !
+          </p>
+        </header>
+       
+        <div class="grid grid-cols-2 justify-center gap-2">
+          <button
+            id="startStopButton"
+            class="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg shadow-md transition duration-200"
+          >
+            
+            Démarrer
+          </button>
+          <button
+            id="resetButton"
+            class="px-6 py-3 bg-red-500 hover:bg-red-600 text-white font-semibold rounded-lg shadow-md transition duration-200"
+          >
+            Réinitialiser
+          </button>
+          <button
+            id="configButton"
+            class="px-6 py-3 bg-teal-500 hover:bg-teal-600 text-white font-semibold rounded-lg shadow-md transition duration-200"
+          >
+            Configurations
+          </button>
+          <button
+            id="manualButton"
+            class="px-6 py-3 bg-gray-500 hover:bg-gray-600 text-white font-semibold rounded-lg shadow-md transition duration-200"
+          >
+            Les règles
+          </button>
+        </div>
+
+        <div
+          class="flex flex-wrap gap-2 justify-center items-center mt-4 p-4 bg-zinc-700 rounded-lg shadow-inner"
+        >
+          <label
+            for="speedSelect"
+            class="text-white font-semibold mr-4 mb-2 sm:mb-0"
+            >Vitesse de la simulation :</label
+          >
+          <select
+            id="speedSelect"
+            class="px-4 py-2 bg-zinc-600 border border-zinc-500 text-white rounded-lg focus:ring-indigo-500 outline-none focus:border-green-600/50"
+          >
+            <option value="400">Très Lente (400 ms)</option>
+            <option value="200">Lente (200 ms)</option>
+            <option value="100" selected>Normale (100 ms)</option>
+            <option value="50">Rapide (50 ms)</option>
+            <option value="10">Très Rapide (10 ms)</option>
+          </select>
+        </div>
+
+        <div class="text-white">
+        <p>Codé par <a href="https://github.com/Likeur" class="underline">Likeur</a> </p>
+    </div>
+      </div>
+    </div>
+
+    <div
+      id="manualModal"
+      class="hidden fixed inset-0 bg-zinc-900 bg-opacity-90 z-50 flex items-center justify-center p-4 transition-opacity duration-300"
+    >
+      <div class="bg-zinc-800 rounded-xl shadow-xl w-full max-w-lg p-6 md:p-8">
+        <h2 class="text-2xl font-bold text-white mb-4">
+          Règles du Jeu de la Vie
+        </h2>
+        <ul class="list-disc pl-5 space-y-2 text-gray-300">
+          <li>
+            <strong class="text-green-400">Survie:</strong> Toute cellule
+            vivante avec 2 ou 3 voisins vivants survit à la génération suivante.
+          </li>
+          <li>
+            <strong class="text-red-400">Sous/Surpopulation:</strong> Toute
+            cellule vivante avec moins de 2 ou plus de 3 voisins vivants meurt.
+          </li>
+          <li>
+            <strong class="text-blue-400">Naissance:</strong> Toute cellule
+            morte avec exactement 3 voisins vivants devient vivante.
+          </li>
+          <li>
+            <strong class="text-yellow-400">Interaction:</strong> Cliquez ou
+            touchez le quadrillage pour activer/désactiver les cellules. Glissez
+            (clic gauche) pour vous déplacer et utilisez la molette pour zoomer.
+          </li>
+        </ul>
+        <button
+          id="closeManualButton"
+          class="mt-6 w-full px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg"
+        >
+          Fermer
+        </button>
+      </div>
+    </div>
+
+    <div
+      id="patternsModal"
+      class="hidden fixed inset-0 bg-gray-900 bg-opacity-90 z-50 flex items-center justify-center p-4 transition-opacity duration-300"
+    >
+      <div class="bg-gray-800 rounded-xl shadow-2xl w-full max-w-lg p-6 md:p-8">
+        <h2 class="text-2xl font-bold text-white mb-6 text-center">
+          Charger une Configuration
+        </h2>
+
+        <div
+          id="patternList"
+          class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-white"
+        >
+          <div class="pattern-link" data-pattern="glider">Planeur (Glider)</div>
+          <div class="pattern-link" data-pattern="blinker">
+            Clignoteur (Blinker)
+          </div>
+          <div class="pattern-link" data-pattern="toad">Crapaud (Toad)</div>
+          <div class="pattern-link" data-pattern="beacon">Balise (Beacon)</div>
+          <div
+            class="pattern-link sm:col-span-2 bg-purple-700 hover:bg-purple-800"
+            data-pattern="gliderGun"
+          >
+            Usine à Planeurs de Gosper (Gun)
+          </div>
+          <div class="pattern-link" data-pattern="pulsar">Pulsar</div>
+          <div class="pattern-link" data-pattern="lwss">
+            Vaisseau Léger (LWSS)
+          </div>
+        </div>
+
+        <button
+          id="closePatternsButton"
+          class="mt-6 w-full px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg"
+        >
+          Fermer
+        </button>
+      </div>
+    </div>
+    
+    
+
+    <script src="./main.js"></script>
+  </body>
+</html>
